@@ -386,21 +386,21 @@ parameter CONF_STR = {
 	"P1O[33:32],Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
 	"P1O[35:34],Scale,Normal,V-Integer,Narrower HV-Integer,Wider HV-Integer;",
 	"P1-;",
-	"DEP1O[62],Fixed HBlank,On,Off;",
-	"DEP1O[55],Fixed VBlank,Off,On;",
-	"d5P1O[4:3],Vertical Crop,Off,On(224/270),On(216/256);",
-	"P1O[67],Horizontal Crop,Off,On;",
-	"P1O[61],Black Transitions,On,Off;",
-	"P1O[41],Deinterlacing,Weave,Bob;",
-	"P1O[60],Sync 480i for HDMI,Off,On;",
+	"DFDEP1O[62],Fixed HBlank,On,Off;",
+	"DFDEP1O[55],Fixed VBlank,Off,On;",
+	"DFd5P1O[4:3],Vertical Crop,Off,On(224/270),On(216/256);",
+	"DFP1O[67],Horizontal Crop,Off,On;",
+	"DFP1O[61],Black Transitions,On,Off;",
+	"DFP1O[41],Deinterlacing,Weave,Bob;",
+	"DFP1O[60],Sync 480i for HDMI,Off,On;",
 	"P1O[24],Rotate,Off,On;",
 	"P1-;",
 	"P1O[22],Dithering,On,Off;",
 	"DEP1O[84],Render 24 Bit,Off,On;",
-	"P1O[73],Dither 24 Bit for VGA,Off,On;",
+	"DFP1O[73],Dither 24 Bit for VGA,Off,On;",
 	"P1-;",
-	"P1O[89],480i to 480p Hack,Off,On;",
-	"P1O[54:53],Widescreen Hack,Off,3:2,5:3,16:9;",
+	"DFP1O[89],480i to 480p Hack,Off,On;",
+	"DFP1O[54:53],Widescreen Hack,Off,3:2,5:3,16:9;",
 	"P1O[82:81],Texture Filter,Off,All Polygon,Dithered,Dith+Shaded;",
 	"hDP1O[87:86],Filter Strength,25%,50%,75%,100%;",
 	"hDP1O[83],Filter 2D Detect,Off,On;",
@@ -478,7 +478,7 @@ parameter CONF_STR = {
 reg dbg_enabled = 0;
 wire  [1:0] buttons;
 wire [127:0] status;
-wire [15:0] status_menumask = {hack_480p, filter_on, saving_memcard, (bk_pending | saving_memcard), bk_pending, status[59], multitap, biosMod, ~TURBO_MEM, (status[55] && ~hack_480p), (PadPortDS1 | PadPortDS2), dbg_enabled, (PadPortGunCon1 | PadPortGunCon2 | PadPortJustif1 | PadPortJustif2), SDRAM2_EN, (snacPort1 | snacPort2)};
+wire [15:0] status_menumask = {DIRECT_VIDEO, hack_480p, filter_on, saving_memcard, (bk_pending | saving_memcard), bk_pending, status[59], multitap, biosMod, ~TURBO_MEM, (status[55] && ~hack_480p), (PadPortDS1 | PadPortDS2), dbg_enabled, (PadPortGunCon1 | PadPortGunCon2 | PadPortJustif1 | PadPortJustif2), SDRAM2_EN, (snacPort1 | snacPort2)};
 wire        forced_scandoubler;
 reg  [31:0] sd_lba0 = 0;
 reg  [31:0] sd_lba1;
