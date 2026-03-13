@@ -50,6 +50,10 @@ Trade-off: significantly longer compile times (~2-3x) but better timing closure 
 
 5. **Converted 4 MDEC tables from M10K to MLAB** — The IDCT scale tables (2× 64×16) and T-tables (2× 64×30) were using `dpram` (altsyncram/M10K) despite being small enough for MLAB. These use simple dual-port access (write A, read B) which is supported by `altdpram`/MLAB. Frees 4 M10K blocks. The `iIDCTiTable` (64×11) was NOT converted because it uses true dual-port writes (port B writes during IDCT_STAGE2).
 
+6. **Converted 2 small CD-ROM FIFOs from M10K to MLAB** — `ififoParam` and `ififoResponse` in `cd_top.vhd` (both 32×8 = 256 bits) were using `SyncFifoFallThrough` which infers M10K. Converted to `SyncFifoFallThroughMLAB`. Frees 2 M10K blocks.
+
+7. **Converted MDEC `iramColorResult` from M10K to MLAB** — The color result buffer (256×24 = 6144 bits) used simple dual-port access on a single clock. Converted from `dpram` to `RamMLAB`. Uses ~10 MLABs but frees 1–2 M10K blocks.
+
 ---
 
 ## Remaining Opportunities (Not Yet Implemented)
