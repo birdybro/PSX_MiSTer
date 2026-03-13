@@ -1716,10 +1716,9 @@ begin
    port map
    (
       clk1x                => clk1x,
-      clk2x                => clk2x,
-      ce                   => ce,   
+      ce                   => ce,
       reset                => reset_intern,
-      
+
       pauseNext            => cpuPaused or (dmaRequest and canDMA),
       isIdle               => memMuxIdle,
          

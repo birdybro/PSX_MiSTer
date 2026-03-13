@@ -8,7 +8,6 @@ entity memorymux is
    port 
    (
       clk1x                : in  std_logic;
-      clk2x                : in  std_logic;
       ce                   : in  std_logic;
       reset                : in  std_logic;
       
