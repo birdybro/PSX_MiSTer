@@ -34,9 +34,7 @@ entity gte is
       SS_wren              : in  std_logic;
       SS_rden              : in  std_logic;
       SS_DataRead          : out std_logic_vector(31 downto 0);
-      SS_idle              : out std_logic;
-      
-      debug_firstGTE       : out std_logic
+      SS_idle              : out std_logic
    );
 end entity;
 
@@ -254,9 +252,6 @@ architecture arch of gte is
    signal div_result       : unsigned(16 downto 0);
    signal div_Error        : std_logic;
   
-   -- debug
-   signal debugCnt         : unsigned(31 downto 0);
-   
    -- savestates
    signal SSreadAddr       : unsigned(5 downto 0);
    signal SSrden           : std_logic;
@@ -291,8 +286,6 @@ begin
          
             gte_busy <= '0';
             
-            debugCnt <= (others => '0');
-
             REG_V0X  <= (others => '0');
             REG_V0Y  <= (others => '0');
             REG_V0Z  <= (others => '0');
@@ -566,8 +559,6 @@ begin
             -- calculation
             calcStep <= calcStep + 1; 
             
-            debug_firstGTE <= '0';
-            
             case (state) is
             
                when IDLE =>
@@ -606,11 +597,6 @@ begin
                         when 16#3F# => state <= CALC_NCCT;                        
                         when others => gte_busy <= '0';
                      end case;
-                     
-                     debugCnt <= debugCnt + 1;
-                     if (debugCnt = 0) then
-                        debug_firstGTE <= '1';
-                     end if;
                      
                   elsif (clk2xIndex = '0') then
                      gte_busy <= '0';

@@ -682,9 +682,7 @@ architecture arch of psx_top is
    signal export_t_current2      : unsigned(15 downto 0);
 -- synthesis translate_on
    
-   signal debug_firstGTE         : std_logic;
-   
-begin 
+begin
    
    -- reset
    process (clk1x)
@@ -1938,14 +1936,12 @@ begin
       SS_rden_SCP       => SS_rden(12),        
       SS_DataRead_CPU   => SS_DataRead_CPU,
       SS_DataRead_SCP   => SS_DataRead_SCP,
-      SS_idle           => SS_idle_cpu,
-      
+      SS_idle           => SS_idle_cpu
+
 -- synthesis translate_off
-      cpu_done          => cpu_done,  
-      cpu_export        => cpu_export,
+      ,cpu_done          => cpu_done,
+      cpu_export        => cpu_export
 -- synthesis translate_on
-      
-      debug_firstGTE    => debug_firstGTE
    );
    
    igte : entity work.gte
@@ -1977,9 +1973,7 @@ begin
       SS_wren              => SS_wren(4),     
       SS_rden              => SS_rden(4),     
       SS_DataRead          => SS_DataRead_GTE,
-      SS_idle              => SS_idle_gte,
-      
-      debug_firstGTE       => debug_firstGTE
+      SS_idle              => SS_idle_gte
    );
    
    ddr3_BURSTCNT <= ss_ram_BURSTCNT     when (ddr3_savestate = '1') else arbiter_BURSTCNT when (arbiter_active = '1') else  vram_BURSTCNT;  

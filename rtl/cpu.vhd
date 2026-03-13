@@ -74,14 +74,12 @@ entity cpu is
       SS_rden_SCP           : in  std_logic;
       SS_DataRead_CPU       : out std_logic_vector(31 downto 0);
       SS_DataRead_SCP       : out std_logic_vector(31 downto 0);
-      SS_idle               : out std_logic;
-   
+      SS_idle               : out std_logic
+
 -- synthesis translate_off
-      cpu_done              : out std_logic := '0'; 
-      cpu_export            : out cpu_export_type := ((others => (others => '0')), (others => '0'), (others => '0'), (others => '0'));
+      ;cpu_done              : out std_logic := '0';
+      cpu_export            : out cpu_export_type := ((others => (others => '0')), (others => '0'), (others => '0'), (others => '0'))
 -- synthesis translate_on
-      
-      debug_firstGTE        : in  std_logic
    );
 end entity;
 
