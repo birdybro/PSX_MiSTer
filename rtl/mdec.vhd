@@ -702,36 +702,28 @@ begin
    scaleT_address_a <= scaleT_address_WR(5 downto 1) & '1' when (clk2xIndex = '1') else scaleT_address_WR(5 downto 1) & '0';
    scaleT_data_a    <= scaleT_data_aNext                   when (clk2xIndex = '1') else scaleT_data_aFirst;
    
-   iscaleTable1: entity work.dpram
-   generic map ( addr_width => 6, data_width => 16)
+   iscaleTable1: entity mem.RamMLAB
+   generic map ( widthad => 6, width => 16 )
    port map
    (
-      clock_a     => clk2x,
-      address_a   => scaleT_address_a,
-      data_a      => scaleT_data_a,
-      wren_a      => scaleT_wren_a,
-      
-      clock_b     => clk2x,
-      address_b   => scaleT1_address_b,
-      data_b      => x"0000",
-      wren_b      => '0',
-      q_b         => scaleT1_data_b
+      inclock     => clk2x,
+      wraddress   => scaleT_address_a,
+      data        => scaleT_data_a,
+      wren        => scaleT_wren_a,
+      rdaddress   => scaleT1_address_b,
+      q           => scaleT1_data_b
    );
    
-   iscaleTable2: entity work.dpram
-   generic map ( addr_width => 6, data_width => 16)
+   iscaleTable2: entity mem.RamMLAB
+   generic map ( widthad => 6, width => 16 )
    port map
    (
-      clock_a     => clk2x,
-      address_a   => scaleT_address_a,
-      data_a      => scaleT_data_a,
-      wren_a      => scaleT_wren_a,
-      
-      clock_b     => clk2x,
-      address_b   => scaleT2_address_b,
-      data_b      => x"0000",
-      wren_b      => '0',
-      q_b         => scaleT2_data_b
+      inclock     => clk2x,
+      wraddress   => scaleT_address_a,
+      data        => scaleT_data_a,
+      wren        => scaleT_wren_a,
+      rdaddress   => scaleT2_address_b,
+      q           => scaleT2_data_b
    );
    
    scaleT1_address_b <= std_logic_vector(to_unsigned(idct_u  * 8 + idct_y, 6)) when (idctState = IDCT_STAGE1) else std_logic_vector(to_unsigned(idct_u  * 8 + idct_x, 6));
@@ -745,36 +737,28 @@ begin
    IDCTt_wren_a    <= ce when (idct_calc2_ena = '1' and idct_calc2_last = '1' and idct_calc2_stage = '0') else '0';
    IDCTt_data_a    <= std_logic_vector(resize(idct_sum, 30));
    
-   iIDCTtTable1: entity work.dpram
-   generic map ( addr_width => 6, data_width => 30)
+   iIDCTtTable1: entity mem.RamMLAB
+   generic map ( widthad => 6, width => 30 )
    port map
    (
-      clock_a     => clk2x,
-      address_a   => IDCTt_address_a,
-      data_a      => IDCTt_data_a,
-      wren_a      => IDCTt_wren_a,
-      
-      clock_b     => clk2x,
-      address_b   => IDCTt_address_b1,
-      data_b      => (29 downto 0 => '0'),
-      wren_b      => '0',
-      q_b         => IDCTt_dataO_b1
+      inclock     => clk2x,
+      wraddress   => IDCTt_address_a,
+      data        => IDCTt_data_a,
+      wren        => IDCTt_wren_a,
+      rdaddress   => IDCTt_address_b1,
+      q           => IDCTt_dataO_b1
    );
    
-   iIDCTtTable2: entity work.dpram
-   generic map ( addr_width => 6, data_width => 30)
+   iIDCTtTable2: entity mem.RamMLAB
+   generic map ( widthad => 6, width => 30 )
    port map
    (
-      clock_a     => clk2x,
-      address_a   => IDCTt_address_a,
-      data_a      => IDCTt_data_a,
-      wren_a      => IDCTt_wren_a,
-      
-      clock_b     => clk2x,
-      address_b   => IDCTt_address_b2,
-      data_b      => (29 downto 0 => '0'),
-      wren_b      => '0',
-      q_b         => IDCTt_dataO_b2
+      inclock     => clk2x,
+      wraddress   => IDCTt_address_a,
+      data        => IDCTt_data_a,
+      wren        => IDCTt_wren_a,
+      rdaddress   => IDCTt_address_b2,
+      q           => IDCTt_dataO_b2
    );
    
    IDCTt_address_b1 <= std_logic_vector(to_unsigned(idct_u  + idct_y * 8, 6));
