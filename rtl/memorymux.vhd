@@ -423,8 +423,9 @@ begin
    
    bus_stall         <= bus_gpu_stall;
    
-   dataFromBusses    <= bus_memc_dataRead or bus_pad_dataRead or bus_sio_dataRead or bus_memc2_dataRead or bus_irq_dataRead or 
-                        bus_dma_dataRead or bus_tmr_dataRead or bus_gpu_dataRead or bus_mdec_dataRead;
+   -- Tree-structured OR reduces combinational depth from ~8 to ~4 levels
+   dataFromBusses    <= (bus_memc_dataRead or bus_pad_dataRead or bus_sio_dataRead or bus_memc2_dataRead) or
+                        (bus_irq_dataRead or bus_dma_dataRead or bus_tmr_dataRead or bus_gpu_dataRead or bus_mdec_dataRead);
    
    data_ram          <= ram_dataRead;
   
