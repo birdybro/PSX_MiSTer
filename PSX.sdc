@@ -29,3 +29,15 @@ set_false_path -from {emu|pll2|pll2_inst|altera_pll_i|cyclonev_pll|counter[0].ou
 set_false_path -from [get_registers {emu|video_isPal}] -to [get_clocks {emu|pll2|pll2_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk}]
 set_false_path -from [get_registers {emu|fast_forward}] -to [get_clocks {emu|pll2|pll2_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk}]
 set_false_path -from [get_registers {emu|status[*]}] -to [get_clocks {emu|pll2|pll2_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk}]
+
+# Save state bus — generated in clk2x, broadcast to 14+ modules in clk1x.
+# The clk2xIndex handshake ensures data is stable for 2 clk2x cycles when sampled.
+# Relaxing setup to 2 cycles gives the fitter room to route these high fan-out nets.
+set_multicycle_path -from [get_registers {emu|psx|ipsx_top|isavestates|SS_DataWrite*}] -setup 2
+set_multicycle_path -from [get_registers {emu|psx|ipsx_top|isavestates|SS_DataWrite*}] -hold 1
+set_multicycle_path -from [get_registers {emu|psx|ipsx_top|isavestates|SS_Adr*}] -setup 2
+set_multicycle_path -from [get_registers {emu|psx|ipsx_top|isavestates|SS_Adr*}] -hold 1
+set_multicycle_path -from [get_registers {emu|psx|ipsx_top|isavestates|SS_wren*}] -setup 2
+set_multicycle_path -from [get_registers {emu|psx|ipsx_top|isavestates|SS_wren*}] -hold 1
+set_multicycle_path -from [get_registers {emu|psx|ipsx_top|isavestates|SS_rden*}] -setup 2
+set_multicycle_path -from [get_registers {emu|psx|ipsx_top|isavestates|SS_rden*}] -hold 1
