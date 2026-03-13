@@ -769,7 +769,7 @@ begin
       end if;
    end process;
    
-   ififoParam: entity mem.SyncFifoFallThrough
+   ififoParam: entity mem.SyncFifoFallThroughMLAB
    generic map
    (
       SIZE             => 32,
@@ -1663,7 +1663,7 @@ begin
       end if;
    end process;
    
-   ififoResponse: entity mem.SyncFifoFallThrough
+   ififoResponse: entity mem.SyncFifoFallThroughMLAB
    generic map
    (
       SIZE             => 32,
