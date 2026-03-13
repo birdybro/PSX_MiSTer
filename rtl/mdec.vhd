@@ -1098,25 +1098,16 @@ begin
       end if;
    end process;
    
-   iramColorResult: entity work.dpram
-   generic map 
-   ( 
-      addr_width => 8, 
-      data_width => 24
-   )
+   iramColorResult: entity mem.RamMLAB
+   generic map ( widthad => 8, width => 24 )
    port map
    (
-      clock_a     => clk2x,
-      clken_a     => '1',
-      address_a   => std_logic_vector(color_addr),
-      data_a      => color_result,
-      wren_a      => color_write,
-      
-      clock_b     => clk2x,
-      address_b   => std_logic_vector(color_readAddr),
-      data_b      => x"000000",
-      wren_b      => '0',
-      q_b         => color_readData
+      inclock     => clk2x,
+      wraddress   => std_logic_vector(color_addr),
+      data        => color_result,
+      wren        => color_write,
+      rdaddress   => std_logic_vector(color_readAddr),
+      q           => color_readData
    );
    
    -- Output
