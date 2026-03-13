@@ -6,146 +6,78 @@ Nothing in `/sys/` should be modified — it is shared MiSTer framework code.
 
 ---
 
-## 1. Fitter Settings (QSF) — Zero Risk, Immediate Benefit
+## Changes Applied
 
-Current QSF settings are conservative for a design at this utilization level.
+### QSF Fitter Settings
 
-| Setting | Current | Recommended | Notes |
-|---------|---------|-------------|-------|
-| `FITTER_EFFORT` | `STANDARD FIT` | `AGGRESSIVE FIT` | More placement/routing iterations on critical paths |
-| `PLACEMENT_EFFORT_MULTIPLIER` | `1.0` | `1.5` – `2.0` | Extra placement iterations; helps at high utilization |
-| `ALM_REGISTER_PACKING_EFFORT` | `LOW` | `MEDIUM` | Packs registers more aggressively to reduce routing congestion |
-| `SEED` | `1` (fixed) | Try multiple seeds during dev | Different seeds escape local minima; keep fixed for release |
+| Setting | Before | After |
+|---------|--------|-------|
+| `FITTER_EFFORT` | `STANDARD FIT` | `AGGRESSIVE FIT` |
+| `PLACEMENT_EFFORT_MULTIPLIER` | `1.0` | `1.5` |
+| `ALM_REGISTER_PACKING_EFFORT` | `LOW` | `MEDIUM` |
+| `ROUTER_TIMING_OPTIMIZATION_LEVEL` | (default) | `MAXIMUM` |
+| `ROUTER_EFFORT_MULTIPLIER` | (default) | `3.0` |
+| `FITTER_AGGRESSIVE_ROUTABILITY_OPTIMIZATION` | (default) | `ALWAYS` |
+| `OPTIMIZE_MULTI_CORNER_TIMING` | (default) | `ON` |
+| `SYNTH_TIMING_DRIVEN_SYNTHESIS` | (default) | `ON` |
+| `PHYSICAL_SYNTHESIS_EFFORT` | (default) | `EXTRA` |
 
-These cost compile time but require no RTL changes. `AGGRESSIVE FIT` alone can make a meaningful difference at 80%+ utilization.
+Trade-off: significantly longer compile times (~2-3x) but better timing closure probability at 80%+ utilization. Try different `SEED` values during development to escape local minima.
 
----
+### SDC Constraints (PSX.sdc)
 
-## 2. SDC Constraint Improvements — Low Risk, Frees Fitter Effort
+1. **Completed PLL2 false path coverage** — The original SDC was missing clk_3x (general[2]) ↔ clk_vid false paths in both directions. Since PLL2 is not included in the sys_top.sdc exclusive clock groups, Quartus was trying to time paths between the 101.6 MHz SDRAM clock and the async video clock. Also added missing FPGA_CLK2_50/CLK3_50 reverse paths.
 
-### Missing false paths for quasi-static CDC signals
+2. **False paths for quasi-static CDC signals** — `video_isPal`, `fast_forward`, and `status[*]` crossing from clk_1x to clk_vid. These only change on OSD interaction or region detection.
 
-`PSX.sdc` has 10 false paths for PLL isolation but is missing constraints for quasi-static signals that the fitter is currently trying (and struggling) to time. These signals only change on OSD interaction or region detection:
+3. **Multicycle paths for save state broadcast bus** — SS_DataWrite (32-bit), SS_Adr (19-bit), SS_wren, and SS_rden are generated in the clk2x process of savestates.vhd and broadcast to 14+ modules. The clk2xIndex handshake ensures data is stable for 2 clk2x cycles when sampled. Relaxing to 2 setup cycles gives the fitter room to route these high fan-out nets.
 
-```tcl
-# Quasi-static control signals — change only on OSD/region change
-set_false_path -from [get_registers {emu|video_isPal}]
-set_false_path -from [get_registers {emu|fast_forward}]
-set_false_path -from [get_registers {emu|status[*]}] -to [get_clocks {*pll2*}]
-```
+### RTL Changes
 
-Telling the fitter to ignore these paths frees routing resources for paths that actually matter.
+1. **Restructured memorymux 9-way OR as balanced tree** — The `dataFromBusses` signal was an 8-level serial OR chain across 9 bus inputs (every memory read path). Now grouped into two parenthesized halves, reducing combinational depth from ~8 to ~4 levels.
 
-### Phase-aligned clock crossings
+2. **Removed unused `clk2x` port from memorymux** — Port was declared but never referenced. Removed from entity and instantiation to clarify the module's actual clock domain.
 
-Crossings between `clk_1x ↔ clk_2x` and `clk_1x ↔ clk_3x` are safe because these clocks come from the same PLL with fixed phase alignment. Adding multicycle path constraints documents this and gives the fitter margin:
+3. **Added `SYNCHRONIZER_IDENTIFICATION FORCED` attributes** to all CDC synchronizer first-stage registers:
+   - `gpu_videoout_async.vhd`: All 3-FF chains for clk1x↔clkvid↔clk2x crossings
+   - `justifier_sensor.vhd`: irq10 clkvid→clk1x chain
+   - `PSX.sv`: SNAC input synchronizers (USER_IN3_1, USER_IN4_1, USER_IN6_1)
+   - `psx_top.vhd`: Toggle synchronizers (clk1xToggle2X, clk1xToggle3X)
 
-```tcl
-# clk_1x and clk_2x are phase-aligned from same PLL (2:1 ratio)
-# Direct cross-domain transfers in savestates.vhd and spu_ram.vhd rely on this
-set_multicycle_path -from [get_clocks {*clk_1x*}] -to [get_clocks {*clk_2x*}] -setup 2
-set_multicycle_path -from [get_clocks {*clk_1x*}] -to [get_clocks {*clk_2x*}] -hold 1
-```
-
----
-
-## 3. Critical Combinational Paths — Highest Impact RTL Changes
-
-### 3a. memorymux.vhd — 9-way bus OR (line ~426)
-
-**The single widest combinational path in the design.** Every memory read passes through:
-
-```vhdl
-dataFromBusses <= bus_memc_dataRead or bus_pad_dataRead or bus_sio_dataRead or
-                  bus_memc2_dataRead or bus_irq_dataRead or bus_dma_dataRead or
-                  bus_tmr_dataRead or bus_gpu_dataRead or bus_mdec_dataRead;
-```
-
-This is 8 levels of 32-bit OR gates in series.
-
-**Options:**
-- **Tree restructure** (no latency cost): Group into two sets of 4–5, OR each group, then OR the results. Reduces depth from ~8 to ~4 levels.
-- **Register pipeline** (1-cycle latency): Register `dataFromBusses` output. Peripheral reads already have latency tolerance, but requires verifying no tight read-to-use dependencies.
-
-Additionally, `addressData_buf` fans out to all 9 bus decoders (~40+ loads), creating high capacitive load. Manual register duplication of this signal could help.
-
-### 3b. cpu.vhd — Instruction decode + ALU (lines ~1100–1660)
-
-Massive case statement with 60+ instruction types. Key issue:
-
-- `calcMemAddr` (32-bit addition) is computed, then immediately used for alignment checks and exception generation — all combinationally in the same cycle
-- Overflow detection requires XOR trees + AND gates + conditional logic (~5–6 gate levels)
-- Address alignment checks at lines 1562–1650 add further depth
-
-**Options:**
-- Move `calcMemAddr` computation earlier in the pipeline (to decode stage)
-- Register exception outputs separately from ALU results
-
-### 3c. gte.vhd — 64-way read mux (lines ~392–463)
-
-A 64-entry case statement with conditional saturation logic (clamping IR1/IR2/IR3 values). The saturation comparisons add 4 gate levels on top of the mux selection.
-
-**Option:** Register `gte_readData` output. The GTE read path likely has a cycle of tolerance since the CPU must decode the MFC2 instruction result.
-
-### 3d. dma.vhd — Control decode (lines ~192–230)
-
-Barrel shifters for `chopsize`/`chopwaittime` plus the multi-condition `dmaOn` signal (~6–8 gate levels).
-
-**Option:** Register `ram_cnt`, `dmaOn`, `chopsize`, and `chopwaittime`. DMA state transitions are already clocked, so adding one cycle of output latency is straightforward.
+   This tells the fitter to place synchronizer chain stages close together for optimal metastability recovery time.
 
 ---
 
-## 4. High Fan-Out Signals
+## Remaining Opportunities (Not Yet Implemented)
 
-| Signal | Module | Estimated Fan-out | Notes |
-|--------|--------|-------------------|-------|
-| `addressData_buf` | memorymux.vhd | ~40+ | Address bus to all 9 peripheral decoders |
-| `ce` (clock enable) | cpu.vhd | ~100+ | Gates all pipeline stage updates |
-| `dmaState` | dma.vhd | ~15+ | Enum compared in many places |
-| `bus_gpu_stall` | gpu.vhd → memorymux.vhd | ~3–5 (but critical path) | Combinational feedback loop |
+### RTL — High Risk (cycle-accurate behavior)
 
-The fitter has `PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION ON` (already enabled), which should handle some of this automatically. Manual duplication of `ce` in cpu.vhd may help if it appears in timing reports.
+These would help timing but risk breaking game compatibility:
 
----
+- **GTE 64-way read mux** (`gte.vhd:392-463`): Pipelining the output would break the CPU-GTE stall timing
+- **DMA control signals** (`dma.vhd:192-230`): `dmaOn`, `ram_cnt` are part of cycle-accurate CPU/DMA bus arbitration
+- **CPU calcMemAddr pipeline** (`cpu.vhd:1100-1660`): Moving the 32-bit address add earlier in the pipeline could help but requires careful validation
+- **SDRAM ready signal 2nd FF** (`sdram.sv:153-155`): Adding latency to the ready handshake could reduce SDRAM throughput
 
-## 5. BRAM/DSP Relief — Marginal Gains
+### BRAM/DSP Relief — Marginal
 
-At 100% BRAM and 100% DSP utilization, any freed block helps the fitter with placement flexibility.
+At 100% BRAM/DSP, any freed block helps placement flexibility, but the candidates are small:
 
-### Small arrays that could move to registers (free BRAM)
+| Module | Array | Size | Trade-off |
+|--------|-------|------|-----------|
+| cheats.vhd | `t_cheatmem` | 32 × 128-bit | Frees ~1 BRAM but costs ~512 ALMs |
+| gpu.vhd | `t_ssarray` | 8 × 32-bit | Likely already in registers |
+| timer.vhd | `t_ssarray` | 16 × 32-bit | Likely already in registers |
 
-| Module | Array | Size | Candidate? |
-|--------|-------|------|------------|
-| cheats.vhd | `t_cheatmem` | 32 × 128-bit | Yes — small, infrequent access |
-| gpu.vhd | `t_ssarray` | 8 × 32-bit | Yes — tiny save state |
-| timer.vhd | `t_ssarray` | 16 × 32-bit | Maybe — small save state |
-| memctrl.vhd | `t_ssarray` | 32 × 32-bit | Maybe — borderline size |
+### High Fan-Out Signals
 
-### DSP considerations
+| Signal | Module | Fan-out | Notes |
+|--------|--------|---------|-------|
+| `ce` (clock enable) | psx_top.vhd | ~20 modules | PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION should help |
+| `reset_intern` | psx_top.vhd | ~19 modules | Registered, fitter can duplicate |
+| `SS_DataWrite` | psx_top.vhd | ~14 modules | Multicycle constraint applied |
+| `addressData_buf` | memorymux.vhd | ~40+ loads | Manual duplication could help |
 
-- All multiplications are in performance-critical paths (GTE MAC units, audio mixing) — these should stay in DSP blocks
-- The divider (`divider.vhd`) is already implemented in logic, not DSP
-- No obvious DSP-to-logic trade candidates without significant rework
+### 3-FF vs 2-FF Synchronizers
 
----
-
-## 6. 3-FF vs 2-FF Synchronizers
-
-`gpu_videoout_async.vhd` uses 3-FF synchronizer chains for all `clk_vid` domain crossings. At high utilization, extra FFs compete for placement. If the fitter can't place all 3 stages close together, the added routing delay can eat into the resolution time the 3rd stage was supposed to provide.
-
-**Consider:** Dropping to 2-FF for signals where the MTBF with 2 stages is already sufficient (the quasi-static settings/reports records). This frees a small number of registers and reduces placement pressure. The truly asynchronous `clk_vid` domain justifies 3-FF only for signals that change frequently relative to the clock period.
-
----
-
-## Recommended Priority
-
-| Priority | Change | Risk | Effort |
-|----------|--------|------|--------|
-| 1 | Fitter settings in QSF | None | Trivial |
-| 2 | Add false_path / multicycle_path constraints in SDC | Minimal | Small |
-| 3 | Tree-restructure memorymux OR chain | Low | Small |
-| 4 | Register GTE read mux output | Low | Small |
-| 5 | Register DMA control outputs | Low | Small |
-| 6 | Move small arrays from BRAM to registers | Low | Medium |
-| 7 | Pipeline CPU calcMemAddr | Medium | Medium |
-| 8 | Evaluate 3-FF → 2-FF for quasi-static signals | Low | Small |
+`gpu_videoout_async.vhd` uses 3-FF chains for all clk_vid crossings. Dropping to 2-FF for quasi-static signals (settings/reports records) would free registers and reduce placement pressure, but the risk is low and the gain is marginal.
