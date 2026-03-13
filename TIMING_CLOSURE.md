@@ -46,6 +46,10 @@ Trade-off: significantly longer compile times (~2-3x) but better timing closure 
 
    This tells the fitter to place synchronizer chain stages close together for optimal metastability recovery time.
 
+4. **Removed unused `debug_firstGTE` port chain** — The `debug_firstGTE` signal was output by GTE (with an associated 32-bit `debugCnt` counter), routed through `psx_top.vhd`, and connected to a CPU input port that was never read in the CPU architecture. Removed the port from all three files and the dead counter logic.
+
+5. **Converted 4 MDEC tables from M10K to MLAB** — The IDCT scale tables (2× 64×16) and T-tables (2× 64×30) were using `dpram` (altsyncram/M10K) despite being small enough for MLAB. These use simple dual-port access (write A, read B) which is supported by `altdpram`/MLAB. Frees 4 M10K blocks. The `iIDCTiTable` (64×11) was NOT converted because it uses true dual-port writes (port B writes during IDCT_STAGE2).
+
 ---
 
 ## Remaining Opportunities (Not Yet Implemented)
