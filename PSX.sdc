@@ -14,3 +14,9 @@ set_false_path -from {emu|pll2|pll2_inst|altera_pll_i|cyclonev_pll|counter[0].ou
 set_false_path -from {emu|pll2|pll2_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk} -to {pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk}
 set_false_path -from {emu|pll2|pll2_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk} -to {sysmem|fpga_interfaces|clocks_resets|h2f_user0_clk}
 set_false_path -from {emu|pll2|pll2_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk} -to {FPGA_CLK1_50}
+
+# Quasi-static control signals crossing clk_1x -> clk_vid
+# These only change on OSD interaction or region detection, not worth timing
+set_false_path -from [get_registers {emu|video_isPal}] -to [get_clocks {emu|pll2|pll2_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk}]
+set_false_path -from [get_registers {emu|fast_forward}] -to [get_clocks {emu|pll2|pll2_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk}]
+set_false_path -from [get_registers {emu|status[*]}] -to [get_clocks {emu|pll2|pll2_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk}]
