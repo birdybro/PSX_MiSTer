@@ -40,47 +40,62 @@ entity gpu_videoout_async is
 end entity;
 
 architecture arch of gpu_videoout_async is
-   
+
+   -- Tell the fitter these are synchronizer chains so it places stages close together
+   attribute SYNCHRONIZER_IDENTIFICATION : string;
+
    -- clk1x -> clkvid
    signal videoout_settings_s2 : tvideoout_settings;
    signal videoout_settings_s1 : tvideoout_settings;
    signal videoout_settings    : tvideoout_settings;
-   
-   signal ce_s2                : std_logic;        
-   signal ce_s1                : std_logic;        
-   signal ce                   : std_logic;        
-   signal ce_1                 : std_logic;        
-   
-   signal reset_s2             : std_logic;        
-   signal reset_s1             : std_logic;        
-   signal reset                : std_logic;      
-   
-   signal softReset_s2         : std_logic;        
-   signal softReset_s1         : std_logic;        
-   signal softReset            : std_logic;  
 
-   signal savestate_pause_s2   : std_logic;        
-   signal savestate_pause_s1   : std_logic;        
-   signal savestate_pause      : std_logic;    
-      
-   signal system_paused_s2     : std_logic;        
-   signal system_paused_s1     : std_logic;        
-   signal system_paused        : std_logic;    
-   
+   signal ce_s2                : std_logic;
+   signal ce_s1                : std_logic;
+   signal ce                   : std_logic;
+   signal ce_1                 : std_logic;
+
+   signal reset_s2             : std_logic;
+   signal reset_s1             : std_logic;
+   signal reset                : std_logic;
+
+   signal softReset_s2         : std_logic;
+   signal softReset_s1         : std_logic;
+   signal softReset            : std_logic;
+
+   signal savestate_pause_s2   : std_logic;
+   signal savestate_pause_s1   : std_logic;
+   signal savestate_pause      : std_logic;
+
+   signal system_paused_s2     : std_logic;
+   signal system_paused_s1     : std_logic;
+   signal system_paused        : std_logic;
+
+   attribute SYNCHRONIZER_IDENTIFICATION of videoout_settings_s2 : signal is "FORCED";
+   attribute SYNCHRONIZER_IDENTIFICATION of ce_s2                : signal is "FORCED";
+   attribute SYNCHRONIZER_IDENTIFICATION of reset_s2             : signal is "FORCED";
+   attribute SYNCHRONIZER_IDENTIFICATION of softReset_s2         : signal is "FORCED";
+   attribute SYNCHRONIZER_IDENTIFICATION of savestate_pause_s2   : signal is "FORCED";
+   attribute SYNCHRONIZER_IDENTIFICATION of system_paused_s2     : signal is "FORCED";
+
    -- clkvid -> clk1x
    signal videoout_reports_s2  : tvideoout_reports;
    signal videoout_reports_s1  : tvideoout_reports;
    signal videoout_reports     : tvideoout_reports;
-   
+
    signal allowunpause         : std_logic;
    signal allowunpause_s1      : std_logic;
    signal allowunpause_s2      : std_logic;
-   
+
+   attribute SYNCHRONIZER_IDENTIFICATION of videoout_reports_s1  : signal is "FORCED";
+   attribute SYNCHRONIZER_IDENTIFICATION of allowunpause_s1      : signal is "FORCED";
+
    -- clkvid -> clk2x
-   
+
    signal videoout_request_s2  : tvideoout_request := ('0', (others => '0'), (others => '0'), 0, (others => '0'));
    signal videoout_request_s1  : tvideoout_request := ('0', (others => '0'), (others => '0'), 0, (others => '0'));
    signal videoout_request     : tvideoout_request := ('0', (others => '0'), (others => '0'), 0, (others => '0'));
+
+   attribute SYNCHRONIZER_IDENTIFICATION of videoout_request_s1  : signal is "FORCED";
    
    -- timing
    signal lineMax                      : integer range 0 to 512 := 512;

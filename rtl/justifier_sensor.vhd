@@ -47,6 +47,9 @@ architecture arch of justifier_sensor is
    signal irq10_1    : std_logic := '0';
    signal irq10_2    : std_logic := '0';
 
+   attribute SYNCHRONIZER_IDENTIFICATION : string;
+   attribute SYNCHRONIZER_IDENTIFICATION of irq10_1 : signal is "FORCED";
+
 begin
 
    irq10  <= '1' when (state = DRAW) else '0';

@@ -1776,9 +1776,9 @@ wire MCtransfer;
 wire PStransfer;
 wire [7:0]PSdatalength;
 
-reg USER_IN3_1;
-reg USER_IN4_1;
-reg USER_IN6_1;
+(* altera_attribute = "-name SYNCHRONIZER_IDENTIFICATION FORCED" *) reg USER_IN3_1;
+(* altera_attribute = "-name SYNCHRONIZER_IDENTIFICATION FORCED" *) reg USER_IN4_1;
+(* altera_attribute = "-name SYNCHRONIZER_IDENTIFICATION FORCED" *) reg USER_IN6_1;
 
 reg USER_IN3_2;
 reg USER_IN4_2;
