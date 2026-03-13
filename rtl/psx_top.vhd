@@ -254,6 +254,11 @@ architecture arch of psx_top is
    signal clk1xToggle3X          : std_logic := '0';
    signal clk1xToggle3X_1        : std_logic := '0';
    signal clk3xIndex             : std_logic := '0';
+
+   -- Tell fitter these are CDC synchronizer first-stage captures
+   attribute SYNCHRONIZER_IDENTIFICATION : string;
+   attribute SYNCHRONIZER_IDENTIFICATION of clk1xToggle2X  : signal is "FORCED";
+   attribute SYNCHRONIZER_IDENTIFICATION of clk1xToggle3X  : signal is "FORCED";
    
    signal Pause_Idle             : std_logic;
    signal pausing                : std_logic := '0';
